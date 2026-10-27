@@ -156,3 +156,42 @@ footer { text-align: center; padding: 12px; }
   .question-form button { justify-content: center; padding: 12px; }
   .copilot-title .tag { display: none; }
 }
+/* AI analysis readability improvements */
+.ai-message {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #24324b;
+  overflow-wrap: anywhere;
+}
+
+.ai-message p {
+  margin: 0 0 10px;
+  white-space: normal;
+}
+
+.analysis-result {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.analysis-result .result-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.analysis-result .result-line {
+  line-height: 1.6;
+}
+
+@media (max-width: 768px) {
+  .ai-message {
+    font-size: 13px;
+  }
+
+  .analysis-result {
+    padding: 12px;
+  }
+}

@@ -269,8 +269,13 @@ function App() {
                   <h2>AI Logistics Copilot</h2>
                   <p>Ask questions about shipments and inventory.</p>
                 </div>
-                <span className="tag">RULES MODE</span>
-              </div>
+                <span className="tag">
+                {analysis?.mode === "meta-api"
+                ? "META AI": analysis?.mode === "local-rules"
+                ? "RULES MODE"
+                : "AI COPILOT"}
+                </span>
+                </div>
 
               <form onSubmit={askCopilot} className="question-form">
                 <input
@@ -306,7 +311,16 @@ function App() {
                       </ol>
                     </>
                   )}
-                  {analysis.message && <p>{analysis.message}</p>}
+                  {analysis.message && (
+                  <div className="ai-message">
+                  {analysis.message.split("\n").map((line, index) => {
+                  const cleaned = line.replace(/\*\*/g, "").replace(/^#{1,6}\s*/, "");
+                  return cleaned.trim() ? (
+                  <p key={index}>{cleaned}</p>
+                  ) : null;
+                  })}
+                  </div>
+                  )}
                   {analysis.note && <p className="muted-note">{analysis.note}</p>}
                 </div>
               )}

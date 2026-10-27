@@ -1,6 +1,7 @@
 
 import os
 from dotenv import load_dotenv
+from openai import OpenAI
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -109,45 +110,119 @@ def dashboard():
     }
 
 
+
 @app.post("/analyze")
 def analyze(request: AnalysisRequest):
-    metrics = calculate_metrics()
-    delayed_shipments = [
-        s for s in SHIPMENTS if s["status"] == "Delayed"
-    ]
-    low_stock = [
-        item for item in INVENTORY
-        if item["stock"] < item["reorder_level"]
-    ]
-
     api_key = os.getenv("MODEL_API_KEY")
 
     if not api_key:
         return {
             "mode": "local-rules",
             "question": request.question,
-            "metrics": metrics,
+            "metrics": calculate_metrics(),
             "findings": [
-                f"{len(delayed_shipments)} of {len(SHIPMENTS)} shipments are delayed.",
-                f"On-time delivery rate is {metrics['on_time_rate_percent']}%.",
-                f"{len(low_stock)} inventory items are below reorder level.",
+                "Meta Model API key is not configured.",
+                "The dashboard data is available for local analysis.",
             ],
             "recommendations": [
-                "Prioritize the shipment with the longest delay.",
-                "Review delay causes with the relevant transport providers.",
-                "Review replenishment for: "
-                + ", ".join(item["item"] for item in low_stock),
+                "Configure MODEL_API_KEY in your local .env file.",
+                "Restart the backend and retry the analysis.",
             ],
-            "note": "Sample data; Meta AI integration is not active.",
+            "note": "Meta AI analysis is currently unavailable.",
         }
 
-    # The Meta API call will be added after billing access is confirmed.
-    return {
-        "mode": "meta-pending",
-        "question": request.question,
-        "metrics": metrics,
-        "message": (
-            "The API key is configured. Meta AI analysis will be "
-            "enabled after billing and credit access are verified."
-        ),
+    delayed_shipments = [
+        shipment for shipment in SHIPMENTS
+        if shipment["status"] == "Delayed"
+    ]
+
+    low_stock = [
+        item for item in INVENTORY
+        if item["stock"] < item["reorder_level"]
+    ]
+
+    business_data = {
+        "metrics": calculate_metrics(),
+        "shipments": SHIPMENTS,
+        "inventory": INVENTORY,
+        "delayed_shipments": delayed_shipments,
+        "low_stock_items": low_stock,
     }
+
+    prompt = f"""
+You are an AI Logistics and Supply Chain Copilot
+for Indian distributors and MSMEs.
+
+Analyze the following business data and answer the user's question.
+
+BUSINESS DATA:
+{business_data}
+
+USER QUESTION:
+{request.question}
+
+Instructions:
+1. Use only the supplied data for factual claims.
+2. Prioritize urgent shipment delays and inventory shortages.
+3. Use INR for monetary values.
+4. Clearly distinguish observed facts from possible causes.
+5. Give three practical, prioritized recommendations.
+6. Do not invent routes, costs, inventory figures, or business events.
+7. Mention that this is sample data when relevant.
+8. Format the answer with clear headings and concise bullet points.
+"""
+
+    try:
+        client = OpenAI(
+            api_key=api_key,
+            base_url="https://api.meta.ai/v1",
+        )
+
+        response = client.chat.completions.create(
+            model="muse-spark-1.3",
+            messages=[
+                {
+                    "role": "developer",
+                    "content": (
+                        "You are a careful, data-aware logistics "
+                        "decision-support assistant for Indian MSMEs."
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": prompt,
+                },
+            ],
+        )
+
+        answer = response.choices[0].message.content
+
+        if not answer:
+            raise ValueError("Meta Model API returned an empty response.")
+
+        return {
+            "mode": "meta-api",
+            "question": request.question,
+            "metrics": calculate_metrics(),
+            "findings": [
+                f"{len(delayed_shipments)} of {len(SHIPMENTS)} "
+                "sample shipments are delayed.",
+                f"{len(low_stock)} inventory items are below reorder level.",
+            ],
+            "recommendations": [],
+            "message": answer,
+            "note": "AI-generated analysis based on sample business data.",
+        }
+
+    except Exception as exc:
+        print(f"Meta API analysis error: {type(exc).__name__}: {exc}")
+        from fastapi import HTTPException
+
+        raise HTTPException(
+            status_code=502,
+            detail=(
+                "Meta AI analysis failed. Check API access, credits, "
+                "model availability, and the backend terminal."
+            ),
+        )
+
