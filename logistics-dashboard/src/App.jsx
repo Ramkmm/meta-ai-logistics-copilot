@@ -6,6 +6,7 @@ import {
   Boxes,
   ChartNoAxesCombined,
   CheckCircle2,
+  CircleCheck,
   CircleDollarSign,
   Clock3,
   Package,
@@ -63,6 +64,7 @@ function App() {
   const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [reviewedActions, setReviewedActions] = useState(() => new Set());
 
   async function loadDashboard() {
     setError("");
@@ -175,6 +177,7 @@ const health = (() => {
           score: delay >= 10 ? 100 : delay >= 6 ? 75 : 50,
           priority: delay >= 10 ? "Critical" : delay >= 6 ? "High" : "Moderate",
           type: "shipment",
+          targetId: `shipment-${shipment.id}`,
         };
       }),
     ...(dashboard?.inventory ?? [])
@@ -191,6 +194,7 @@ const health = (() => {
           score: stock === 0 ? 110 : shortageRatio >= 0.5 ? 80 : 60,
           priority: stock === 0 ? "Critical" : shortageRatio >= 0.5 ? "High" : "Moderate",
           type: "inventory",
+          targetId: `inventory-${item.item.toLowerCase().replace(/\s+/g, "-")}`,
         };
       }),
   ].sort((a, b) => b.score - a.score);
@@ -375,10 +379,44 @@ const health = (() => {
                       <div className="priority-copy">
                         <strong>{action.title}</strong>
                         <span>{action.detail}</span>
+                        {reviewedActions.has(action.id) && (
+                          <span className="priority-reviewed-label">
+                            <CircleCheck size={13} /> Reviewed
+                          </span>
+                        )}
                       </div>
-                      <span className={`priority-badge priority-${action.priority.toLowerCase()}`}>
-                        {action.priority}
-                      </span>
+                      <div className="priority-controls">
+                        <span className={`priority-badge priority-${action.priority.toLowerCase()}`}>
+                          {action.priority}
+                        </span>
+                        <button
+                          type="button"
+                          className="priority-action-button"
+                          onClick={() => {
+                            const target = document.getElementById(action.targetId);
+                            target?.scrollIntoView({ behavior: "smooth", block: "center" });
+                            target?.classList.add("priority-target-highlight");
+                            window.setTimeout(() => {
+                              target?.classList.remove("priority-target-highlight");
+                            }, 1800);
+                          }}
+                        >
+                          Open record
+                        </button>
+                        <button
+                          type="button"
+                          className={`priority-review-button ${reviewedActions.has(action.id) ? "is-reviewed" : ""}`}
+                          aria-pressed={reviewedActions.has(action.id)}
+                          onClick={() => setReviewedActions((previous) => {
+                            const next = new Set(previous);
+                            if (next.has(action.id)) next.delete(action.id);
+                            else next.add(action.id);
+                            return next;
+                          })}
+                        >
+                          {reviewedActions.has(action.id) ? "Undo review" : "Mark reviewed"}
+                        </button>
+                      </div>
                     </article>
                   ))}
                 </div>
@@ -423,7 +461,11 @@ const health = (() => {
                 {dashboard.inventory.map((item) => {
                   const low = item.stock < item.reorder_level;
                   return (
-                    <div className="inventory-item" key={item.item}>
+                    <div
+                      className="inventory-item"
+                      key={item.item}
+                      id={`inventory-${item.item.toLowerCase().replace(/\s+/g, "-")}`}
+                    >
                       <div className="item-icon"><Boxes size={18} /></div>
                       <div className="item-info">
                         <strong>{item.item}</strong>
@@ -467,7 +509,7 @@ const health = (() => {
                   </thead>
                   <tbody>
                     {dashboard.shipments.map((shipment) => (
-                      <tr key={shipment.id}>
+                      <tr key={shipment.id} id={`shipment-${shipment.id}`}>
                         <td className="shipment-id">{shipment.id}</td>
                         <td>{shipment.destination}</td>
                         <td>

@@ -529,3 +529,67 @@ footer { text-align: center; padding: 12px; }
     white-space: nowrap;
   }
 }
+
+/* Interactive Priority Actions */
+.priority-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.priority-action-button,
+.priority-review-button {
+  padding: 6px 9px;
+  border: 1px solid #dfe4ee;
+  border-radius: 6px;
+  background: #fff;
+  color: #39465e;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.priority-action-button:hover {
+  background: #eef0ff;
+  border-color: #5267e8;
+}
+
+.priority-review-button {
+  color: #5267e8;
+  border-color: #cbd2ff;
+}
+
+.priority-review-button.is-reviewed {
+  color: #15805c;
+  background: #e5f8ef;
+  border-color: #a7e6c8;
+}
+
+.priority-reviewed-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #15805c !important;
+  margin-top: 5px;
+}
+
+.priority-target-highlight {
+  outline: 2px solid #5267e8;
+  outline-offset: -2px;
+  background-color: #eef0ff !important;
+  transition: background-color 0.3s ease;
+}
+
+#shipments,
+#inventory {
+  scroll-margin-top: 24px;
+}
+
+@media (max-width: 650px) {
+  .priority-controls {
+    width: 100%;
+    justify-content: flex-start;
+    padding-left: 40px;
+  }
+}
