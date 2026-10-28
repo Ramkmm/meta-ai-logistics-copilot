@@ -220,33 +220,49 @@ Instructions:
             "note": "AI-generated analysis based on sample business data.",
         }
 
+    
     except Exception as exc:
-        print(f"Meta API analysis error: {type(exc).__name__}: {exc}")
+        print(
+            f"Meta API analysis error: {type(exc).__name__}: {exc}"
+        )
         print("Meta API request ID:", getattr(exc, "request_id", None))
         print("Meta API status code:", getattr(exc, "status_code", None))
 
+        # Keep temporary diagnostics for the Meta support investigation.
         try:
             diagnostic_models = client.models.list()
             model_ids = {item.id for item in diagnostic_models.data}
             print("Meta API models available on Render:", sorted(model_ids))
             print(
-                "Meta API diagnostic: model_list_ok=True; "
-                f"muse_spark_1_3_available={'muse-spark-1.3' in model_ids}"
+                "Meta API diagnostic: "
+                f"muse_spark_1_3_available="
+                f"{'muse-spark-1.3' in model_ids}"
             )
         except Exception as diagnostic_exc:
             print(
-                "Meta API diagnostic model-list failed: "
+                "Meta API diagnostic failed: "
                 f"{type(diagnostic_exc).__name__}: {diagnostic_exc}"
             )
-        from fastapi import HTTPException
 
-        raise HTTPException(
-            status_code=502,
-            detail=(
-                "Meta AI analysis failed. Check API access, credits, "
-                "model availability, and the backend terminal."
+        # Return a transparent, rule-based fallback instead of HTTP 502.
+        return {
+            "mode": "local-rules",
+            "question": request.question,
+            "metrics": calculate_metrics(),
+            "findings": [
+                "3 of 5 sample shipments are delayed.",
+                "Cooking oil and detergent are below their reorder levels.",
+                "These findings are calculated from the dashboard's sample data."
+            ],
+            "recommendations": [
+                "Prioritize the Vijayawada shipment (SHP-1003), delayed by 12 hours.",
+                "Review the Warangal shipment (SHP-1002), delayed by 8 hours.",
+                "Reorder cooking oil and detergent to address their stock shortages."
+            ],
+            "message": (
+                "Rule-based analysis is being shown because Meta AI is "
+                "temporarily unavailable. These recommendations use "
+                "the sample logistics data, not a live AI response."
             ),
-        )
-
-
-
+            "note": "Fallback mode: Meta AI analysis is unavailable."
+        }
