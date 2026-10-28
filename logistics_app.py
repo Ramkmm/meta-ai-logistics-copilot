@@ -226,6 +226,7 @@ Instructions:
         try:
             diagnostic_models = client.models.list()
             model_ids = {item.id for item in diagnostic_models.data}
+            print("Meta API models available on Render:", sorted(model_ids))
             print(
                 "Meta API diagnostic: model_list_ok=True; "
                 f"muse_spark_1_3_available={'muse-spark-1.3' in model_ids}"
