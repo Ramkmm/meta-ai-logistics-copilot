@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import {
   Activity,
@@ -27,6 +26,27 @@ import {
 import "./App.css";
 
 const API = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+
+function getShipmentRisk(shipment) {
+  const delay = Number(shipment.delay_hours) || 0;
+  if (shipment.status !== "Delayed" || delay <= 0) {
+    return { label: "On track", tone: "risk-good" };
+  }
+  if (delay >= 10) return { label: "High risk", tone: "risk-high" };
+  if (delay >= 6) return { label: "Medium risk", tone: "risk-medium" };
+  return { label: "Low risk", tone: "risk-low" };
+}
+
+function getInventoryRisk(item) {
+  const stock = Number(item.stock) || 0;
+  const reorderLevel = Number(item.reorder_level) || 0;
+  if (reorderLevel <= 0 || stock >= reorderLevel) {
+    return { label: "Healthy", tone: "risk-good" };
+  }
+  const shortageRatio = (reorderLevel - stock) / reorderLevel;
+  if (shortageRatio >= 0.5) return { label: "High risk", tone: "risk-high" };
+  return { label: "Restock soon", tone: "risk-medium" };
+}
 
 function App() {
   const [dashboard, setDashboard] = useState(null);
@@ -187,7 +207,7 @@ const health = (() => {
         {error && <div className="error-banner">{error}</div>}
 
         {!metrics ? (
-          <div className="loading-panel">Loading logistics data…</div>
+          <div className="loading-panel">Loading logistics dataâ€¦</div>
         ) : (
           <>
             <section className="metrics-grid" id="overview">
@@ -214,7 +234,7 @@ const health = (() => {
               />
               <Metric
                 title="Shipping costs"
-                value={`₹${metrics.total_shipping_cost_inr.toLocaleString("en-IN")}`}
+                value={`â‚¹${metrics.total_shipping_cost_inr.toLocaleString("en-IN")}`}
                 note="Total sample shipping cost"
                 icon={<CircleDollarSign />}
                 tone="purple"
@@ -335,12 +355,17 @@ const health = (() => {
                       <div className="item-info">
                         <strong>{item.item}</strong>
                         <span>
-                          Stock: {item.stock} · Reorder at {item.reorder_level}
+                          Stock: {item.stock} Â· Reorder at {item.reorder_level}
                         </span>
                       </div>
-                      <span className={`stock-badge ${low ? "low" : "healthy"}`}>
-                        {low ? "Low stock" : "Healthy"}
-                      </span>
+                      <div className="inventory-badges">
+                        <span className={`stock-badge ${low ? "low" : "healthy"}`}>
+                          {low ? "Low stock" : "Healthy"}
+                        </span>
+                        <span className={`risk-badge ${getInventoryRisk(item).tone}`}>
+                          {getInventoryRisk(item).label}
+                        </span>
+                      </div>
                     </div>
                   );
                 })}
@@ -373,14 +398,19 @@ const health = (() => {
                         <td className="shipment-id">{shipment.id}</td>
                         <td>{shipment.destination}</td>
                         <td>
-                          <span className={`status-badge ${
-                            shipment.status === "Delayed" ? "delayed" : "ontime"
-                          }`}>
-                            {shipment.status}
-                          </span>
+                          <div className="shipment-status-cell">
+                            <span className={`status-badge ${
+                              shipment.status === "Delayed" ? "delayed" : "ontime"
+                            }`}>
+                              {shipment.status}
+                            </span>
+                            <span className={`risk-badge ${getShipmentRisk(shipment).tone}`}>
+                              {getShipmentRisk(shipment).label}
+                            </span>
+                          </div>
                         </td>
                         <td>{shipment.delay_hours} hrs</td>
-                        <td>₹{shipment.shipping_cost_inr.toLocaleString("en-IN")}</td>
+                        <td>â‚¹{shipment.shipping_cost_inr.toLocaleString("en-IN")}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -409,11 +439,11 @@ const health = (() => {
                   onChange={(event) => setQuestion(event.target.value)}
                   minLength={3}
                   maxLength={1000}
-                  placeholder="Ask about delayed deliveries or inventory…"
+                  placeholder="Ask about delayed deliveries or inventoryâ€¦"
                   required
                 />
                 <button type="submit" disabled={loading}>
-                  {loading ? "Analyzing…" : "Analyze"} <Send size={16} />
+                  {loading ? "Analyzingâ€¦" : "Analyze"} <Send size={16} />
                 </button>
               </form>
 
@@ -425,7 +455,7 @@ const health = (() => {
                     <span>{analysis.mode}</span>
                   </div>
                   {analysis.findings?.map((finding) => (
-                    <p className="result-line" key={finding}>• {finding}</p>
+                    <p className="result-line" key={finding}>â€¢ {finding}</p>
                   ))}
                   {analysis.recommendations && (
                     <>
@@ -453,7 +483,7 @@ const health = (() => {
             </section>
 
             <footer>
-              AI Logistics & Supply Chain Copilot · Prototype · Sample data only
+              AI Logistics & Supply Chain Copilot Â· Prototype Â· Sample data only
             </footer>
           </>
         )}
