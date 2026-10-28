@@ -1,4 +1,4 @@
-
+﻿
 import os
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -184,9 +184,9 @@ Instructions:
             base_url="https://api.meta.ai/v1",
         )
 
-        response = client.chat.completions.create(
+        response = client.responses.create(
             model="muse-spark-1.3",
-            messages=[
+            input=[
                 {
                     "role": "developer",
                     "content": (
@@ -201,7 +201,7 @@ Instructions:
             ],
         )
 
-        answer = response.choices[0].message.content
+        answer = response.output_text
 
         if not answer:
             raise ValueError("Meta Model API returned an empty response.")
@@ -231,4 +231,5 @@ Instructions:
                 "model availability, and the backend terminal."
             ),
         )
+
 
