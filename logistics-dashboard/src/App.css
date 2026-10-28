@@ -434,3 +434,98 @@ footer { text-align: center; padding: 12px; }
     flex-direction: column;
   }
 }
+
+/* Priority Actions panel */
+.priority-panel {
+  margin-bottom: 22px;
+}
+
+.priority-list {
+  margin-top: 14px;
+}
+
+.priority-item {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 15px 0;
+  border-bottom: 1px solid #edf0f5;
+}
+
+.priority-item:last-child {
+  border-bottom: 0;
+}
+
+.priority-number {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: #eef0ff;
+  color: #5267e8;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.priority-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.priority-copy strong,
+.priority-copy span {
+  display: block;
+}
+
+.priority-copy strong {
+  font-size: 12px;
+  color: #26334b;
+}
+
+.priority-copy span {
+  font-size: 11px;
+  color: #77839a;
+  margin-top: 5px;
+}
+
+.priority-badge {
+  flex-shrink: 0;
+  padding: 6px 9px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.priority-critical {
+  color: #b42318;
+  background: #feeceb;
+}
+
+.priority-high {
+  color: #b45309;
+  background: #fff1e7;
+}
+
+.priority-moderate {
+  color: #8a6500;
+  background: #fef9c3;
+}
+
+.priority-empty {
+  color: #15805c;
+  font-size: 12px;
+  padding: 18px 0 4px;
+}
+
+@media (max-width: 650px) {
+  .priority-item {
+    align-items: flex-start;
+    gap: 9px;
+  }
+
+  .priority-badge {
+    white-space: nowrap;
+  }
+}

@@ -48,6 +48,13 @@ function getInventoryRisk(item) {
   return { label: "Restock soon", tone: "risk-medium" };
 }
 
+const formatINR = (amount) =>
+  new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  }).format(Number(amount) || 0);
+
 function App() {
   const [dashboard, setDashboard] = useState(null);
   const [question, setQuestion] = useState(
@@ -156,6 +163,38 @@ const health = (() => {
   };
 })();
 
+  const priorityActions = [
+    ...(dashboard?.shipments ?? [])
+      .filter((shipment) => shipment.status === "Delayed" && Number(shipment.delay_hours) > 0)
+      .map((shipment) => {
+        const delay = Number(shipment.delay_hours) || 0;
+        return {
+          id: shipment.id,
+          title: `${shipment.id} — ${shipment.destination}`,
+          detail: `Delayed by ${delay} hours`,
+          score: delay >= 10 ? 100 : delay >= 6 ? 75 : 50,
+          priority: delay >= 10 ? "Critical" : delay >= 6 ? "High" : "Moderate",
+          type: "shipment",
+        };
+      }),
+    ...(dashboard?.inventory ?? [])
+      .filter((item) => Number(item.stock) < Number(item.reorder_level))
+      .map((item) => {
+        const stock = Number(item.stock) || 0;
+        const reorderLevel = Number(item.reorder_level) || 0;
+        const shortage = Math.max(0, reorderLevel - stock);
+        const shortageRatio = reorderLevel > 0 ? shortage / reorderLevel : 0;
+        return {
+          id: item.item,
+          title: `Restock ${item.item}`,
+          detail: `${shortage} units needed to reach reorder level`,
+          score: stock === 0 ? 110 : shortageRatio >= 0.5 ? 80 : 60,
+          priority: stock === 0 ? "Critical" : shortageRatio >= 0.5 ? "High" : "Moderate",
+          type: "inventory",
+        };
+      }),
+  ].sort((a, b) => b.score - a.score);
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -234,7 +273,7 @@ const health = (() => {
               />
               <Metric
                 title="Shipping costs"
-                value={`â‚¹${metrics.total_shipping_cost_inr.toLocaleString("en-IN")}`}
+                value={formatINR(metrics.total_shipping_cost_inr)}
                 note="Total sample shipping cost"
                 icon={<CircleDollarSign />}
                 tone="purple"
@@ -311,6 +350,40 @@ const health = (() => {
     financial rating or a prediction of future business performance.
   </p>
 </section>
+
+            <section className="panel priority-panel" id="priorities">
+              <div className="panel-heading">
+                <div>
+                  <h2>Priority Actions</h2>
+                  <p>Urgent shipments and stock shortages, ranked by urgency</p>
+                </div>
+                <span className="tag">{priorityActions.length} ACTIONS</span>
+              </div>
+
+              {priorityActions.length === 0 ? (
+                <p className="priority-empty">
+                  No shipment delays or inventory shortages detected.
+                </p>
+              ) : (
+                <div className="priority-list">
+                  {priorityActions.map((action, index) => (
+                    <article
+                      className="priority-item"
+                      key={`${action.type}-${action.id}`}
+                    >
+                      <span className="priority-number">{index + 1}</span>
+                      <div className="priority-copy">
+                        <strong>{action.title}</strong>
+                        <span>{action.detail}</span>
+                      </div>
+                      <span className={`priority-badge priority-${action.priority.toLowerCase()}`}>
+                        {action.priority}
+                      </span>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </section>
 
             <section className="content-grid">
               <div className="panel chart-panel">
@@ -410,7 +483,7 @@ const health = (() => {
                           </div>
                         </td>
                         <td>{shipment.delay_hours} hrs</td>
-                        <td>â‚¹{shipment.shipping_cost_inr.toLocaleString("en-IN")}</td>
+                        <td>{formatINR(shipment.shipping_cost_inr)}</td>
                       </tr>
                     ))}
                   </tbody>
