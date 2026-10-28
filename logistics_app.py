@@ -222,6 +222,8 @@ Instructions:
 
     except Exception as exc:
         print(f"Meta API analysis error: {type(exc).__name__}: {exc}")
+        print("Meta API request ID:", getattr(exc, "request_id", None))
+        print("Meta API status code:", getattr(exc, "status_code", None))
 
         try:
             diagnostic_models = client.models.list()
