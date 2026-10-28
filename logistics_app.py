@@ -228,7 +228,7 @@ Instructions:
         print("Meta API request ID:", getattr(exc, "request_id", None))
         print("Meta API status code:", getattr(exc, "status_code", None))
 
-        # Keep temporary diagnostics for the Meta support investigation.
+        # Temporary diagnostics for the Meta support investigation.
         try:
             diagnostic_models = client.models.list()
             model_ids = {item.id for item in diagnostic_models.data}
@@ -244,25 +244,80 @@ Instructions:
                 f"{type(diagnostic_exc).__name__}: {diagnostic_exc}"
             )
 
-        # Return a transparent, rule-based fallback instead of HTTP 502.
+        # Dynamically rank delayed shipments.
+        ranked_delays = sorted(
+            delayed_shipments,
+            key=lambda shipment: shipment["delay_hours"],
+            reverse=True,
+        )
+
+        findings = [
+            f"{len(delayed_shipments)} of {len(SHIPMENTS)} "
+            "sample shipments are delayed."
+        ]
+
+        for shipment in ranked_delays:
+            findings.append(
+                f'{shipment["id"]} to {shipment["destination"]} '
+                f'is delayed by {shipment["delay_hours"]} hours.'
+            )
+
+        # Calculate inventory shortfalls.
+        inventory_shortages = []
+
+        for item in low_stock:
+            shortage = item["reorder_level"] - item["stock"]
+
+            inventory_shortages.append({
+                "item": item["item"],
+                "stock": item["stock"],
+                "reorder_level": item["reorder_level"],
+                "shortage": shortage,
+            })
+
+            findings.append(
+                f'{item["item"]}: {shortage} units below reorder level '
+                f'(stock {item["stock"]}, reorder level '
+                f'{item["reorder_level"]}).'
+            )
+
+        # Generate recommendations from current data.
+        recommendations = []
+
+        for shipment in ranked_delays:
+            delay = shipment["delay_hours"]
+
+            if delay >= 10:
+                priority = "HIGH"
+            elif delay >= 6:
+                priority = "MEDIUM"
+            else:
+                priority = "LOW"
+
+            recommendations.append(
+                f'{priority} priority: Contact the carrier and check '
+                f'the status of shipment {shipment["id"]} to '
+                f'{shipment["destination"]}, delayed by {delay} hours.'
+            )
+
+        for item in inventory_shortages:
+            recommendations.append(
+                f'Reorder at least {item["shortage"]} units of '
+                f'{item["item"]} to reach its reorder level of '
+                f'{item["reorder_level"]} units.'
+            )
+
         return {
             "mode": "local-rules",
             "question": request.question,
             "metrics": calculate_metrics(),
-            "findings": [
-                "3 of 5 sample shipments are delayed.",
-                "Cooking oil and detergent are below their reorder levels.",
-                "These findings are calculated from the dashboard's sample data."
-            ],
-            "recommendations": [
-                "Prioritize the Vijayawada shipment (SHP-1003), delayed by 12 hours.",
-                "Review the Warangal shipment (SHP-1002), delayed by 8 hours.",
-                "Reorder cooking oil and detergent to address their stock shortages."
-            ],
+            "findings": findings,
+            "recommendations": recommendations,
+            "inventory_shortages": inventory_shortages,
             "message": (
                 "Rule-based analysis is being shown because Meta AI is "
-                "temporarily unavailable. These recommendations use "
-                "the sample logistics data, not a live AI response."
+                "temporarily unavailable. Recommendations are calculated "
+                "from the current sample logistics data, not a live AI response."
             ),
-            "note": "Fallback mode: Meta AI analysis is unavailable."
+            "note": "Fallback mode: Meta AI analysis is unavailable.",
         }
