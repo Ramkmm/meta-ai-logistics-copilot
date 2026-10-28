@@ -195,3 +195,190 @@ footer { text-align: center; padding: 12px; }
     padding: 12px;
   }
 }
+
+/* Business Health Score */
+.health-panel {
+  margin-bottom: 22px;
+}
+
+.health-status {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 6px;
+  padding: 7px 10px;
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.health-good {
+  color: #15805c;
+  background: #e5f8ef;
+}
+
+.health-warning {
+  color: #a16207;
+  background: #fef3c7;
+}
+
+.health-critical {
+  color: #b42318;
+  background: #feeceb;
+}
+
+.health-layout {
+  display: grid;
+  grid-template-columns: minmax(170px, 0.75fr) minmax(0, 2fr);
+  align-items: center;
+  gap: 35px;
+  margin-top: 25px;
+}
+
+.health-score-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.health-score-ring {
+  --health-progress: 0deg;
+  width: 156px;
+  height: 156px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: conic-gradient(
+    #5267e8 0deg var(--health-progress),
+    #e9edf5 var(--health-progress) 360deg
+  );
+}
+
+.health-score-ring.ring-good {
+  background: conic-gradient(
+    #15956b 0deg var(--health-progress),
+    #e9edf5 var(--health-progress) 360deg
+  );
+}
+
+.health-score-ring.ring-warning {
+  background: conic-gradient(
+    #d97706 0deg var(--health-progress),
+    #e9edf5 var(--health-progress) 360deg
+  );
+}
+
+.health-score-ring.ring-critical {
+  background: conic-gradient(
+    #dc5b52 0deg var(--health-progress),
+    #e9edf5 var(--health-progress) 360deg
+  );
+}
+
+.health-score-inner {
+  width: 132px;
+  height: 132px;
+  border-radius: 50%;
+  background: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #5267e8;
+}
+
+.health-score-inner strong {
+  color: #18233b;
+  font-size: 34px;
+  line-height: 1.2;
+  margin-top: 4px;
+}
+
+.health-score-inner span {
+  color: #8792a6;
+  font-size: 10px;
+  margin-top: 3px;
+}
+
+.health-score-caption {
+  color: #77839a;
+  font-size: 11px;
+  margin: 12px 0 0;
+}
+
+.health-breakdown {
+  display: grid;
+  gap: 22px;
+  min-width: 0;
+}
+
+.health-factor-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.health-factor-heading strong {
+  color: #39465e;
+  font-size: 12px;
+}
+
+.health-factor-heading span {
+  color: #18233b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.health-track {
+  height: 8px;
+  width: 100%;
+  background: #edf0f5;
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.health-track-fill {
+  height: 100%;
+  background: #5267e8;
+  border-radius: inherit;
+  transition: width 250ms ease;
+}
+
+.health-weight {
+  display: block;
+  color: #8792a6;
+  font-size: 10px;
+  margin-top: 6px;
+}
+
+.health-disclaimer {
+  border-top: 1px solid #edf0f5;
+  padding-top: 14px;
+  margin: 22px 0 0;
+  color: #8792a6;
+  font-size: 10px;
+  line-height: 1.7;
+}
+
+@media (max-width: 650px) {
+  .health-layout {
+    grid-template-columns: 1fr;
+    gap: 25px;
+  }
+
+  .health-score-ring {
+    width: 145px;
+    height: 145px;
+  }
+
+  .health-score-inner {
+    width: 123px;
+    height: 123px;
+  }
+
+  .health-breakdown {
+    gap: 18px;
+  }
+}

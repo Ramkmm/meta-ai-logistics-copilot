@@ -12,6 +12,7 @@ import {
   Package,
   RefreshCw,
   Send,
+  ShieldCheck,
   Truck,
 } from "lucide-react";
 import {
@@ -80,6 +81,60 @@ function App() {
     name: shipment.id.replace("SHP-", ""),
     delay: shipment.delay_hours,
   })) ?? [];
+
+const health = (() => {
+  if (!dashboard?.shipments?.length || !dashboard?.inventory?.length) {
+    return null;
+  }
+
+  const shipments = dashboard.shipments;
+  const inventory = dashboard.inventory;
+
+  const onTimeScore =
+    (shipments.filter((s) => s.status === "On time").length /
+      shipments.length) * 100;
+
+  const totalDelayHours = shipments.reduce(
+    (sum, shipment) => sum + Math.max(0, shipment.delay_hours || 0),
+    0
+  );
+
+  // Reference: 12 delay-hours per shipment.
+  const maxReferenceDelay = shipments.length * 12;
+
+  const reliabilityScore = Math.max(
+    0,
+    100 - (totalDelayHours / maxReferenceDelay) * 100
+  );
+
+  const healthyInventoryCount = inventory.filter(
+    (item) => item.stock >= item.reorder_level
+  ).length;
+
+  const inventoryScore =
+    (healthyInventoryCount / inventory.length) * 100;
+
+  const score = Math.round(
+    onTimeScore * 0.5 +
+    reliabilityScore * 0.3 +
+    inventoryScore * 0.2
+  );
+
+  const status =
+    score >= 80
+      ? "Healthy"
+      : score >= 60
+        ? "Needs Attention"
+        : "Critical";
+
+  return {
+    score,
+    status,
+    onTimeScore: Math.round(onTimeScore),
+    reliabilityScore: Math.round(reliabilityScore),
+    inventoryScore: Math.round(inventoryScore),
+  };
+})();
 
   return (
     <div className="app-shell">
@@ -165,6 +220,77 @@ function App() {
                 tone="purple"
               />
             </section>
+            <section className="panel health-panel" aria-labelledby="health-title">
+  <div className="panel-heading">
+    <div>
+      <h2 id="health-title">Business Health Score</h2>
+      <p>Operational health calculated from current dashboard data</p>
+    </div>
+    <span
+      className={`health-status ${
+        health?.status === "Healthy"
+          ? "health-good"
+          : health?.status === "Needs Attention"
+            ? "health-warning"
+            : "health-critical"
+      }`}
+    >
+      {health?.status ?? "Unavailable"}
+    </span>
+  </div>
+
+  {health && (
+    <div className="health-layout">
+      <div className="health-score-block">
+        <div
+          className={`health-score-ring ${
+            health.score >= 80
+              ? "ring-good"
+              : health.score >= 60
+                ? "ring-warning"
+                : "ring-critical"
+          }`}
+          style={{
+            "--health-progress": `${health.score * 3.6}deg`,
+          }}
+          role="img"
+          aria-label={`Business Health Score ${health.score} out of 100`}
+        >
+          <div className="health-score-inner">
+            <ShieldCheck size={23} />
+            <strong>{health.score}</strong>
+            <span>out of 100</span>
+          </div>
+        </div>
+        <p className="health-score-caption">Overall operational score</p>
+      </div>
+
+      <div className="health-breakdown">
+        <HealthFactor
+          title="On-time delivery"
+          score={health.onTimeScore}
+          weight="50% weight"
+        />
+        <HealthFactor
+          title="Shipment reliability"
+          score={health.reliabilityScore}
+          weight="30% weight"
+        />
+        <HealthFactor
+          title="Inventory health"
+          score={health.inventoryScore}
+          weight="20% weight"
+        />
+      </div>
+    </div>
+  )}
+
+  <p className="health-disclaimer">
+    Demo indicator based on sample shipments and inventory. Shipment
+    reliability uses a 12-hour-per-shipment reference. This is not a
+    financial rating or a prediction of future business performance.
+  </p>
+</section>
 
             <section className="content-grid">
               <div className="panel chart-panel">
@@ -346,5 +472,30 @@ function Metric({ title, value, note, icon, tone }) {
     </article>
   );
 }
+function HealthFactor({ title, score, weight }) {
+  return (
+    <div className="health-factor">
+      <div className="health-factor-heading">
+        <strong>{title}</strong>
+        <span>{score}/100</span>
+      </div>
 
+      <div
+        className="health-track"
+        role="progressbar"
+        aria-label={title}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={score}
+      >
+        <div
+          className="health-track-fill"
+          style={{ width: `${score}%` }}
+        />
+      </div>
+
+      <span className="health-weight">{weight}</span>
+    </div>
+  );
+}
 export default App;
