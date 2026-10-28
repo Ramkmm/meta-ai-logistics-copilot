@@ -222,6 +222,19 @@ Instructions:
 
     except Exception as exc:
         print(f"Meta API analysis error: {type(exc).__name__}: {exc}")
+
+        try:
+            diagnostic_models = client.models.list()
+            model_ids = {item.id for item in diagnostic_models.data}
+            print(
+                "Meta API diagnostic: model_list_ok=True; "
+                f"muse_spark_1_3_available={'muse-spark-1.3' in model_ids}"
+            )
+        except Exception as diagnostic_exc:
+            print(
+                "Meta API diagnostic model-list failed: "
+                f"{type(diagnostic_exc).__name__}: {diagnostic_exc}"
+            )
         from fastapi import HTTPException
 
         raise HTTPException(
@@ -231,5 +244,6 @@ Instructions:
                 "model availability, and the backend terminal."
             ),
         )
+
 
 
