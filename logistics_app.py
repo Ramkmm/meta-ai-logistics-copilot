@@ -119,7 +119,15 @@ def dashboard():
 
 @app.post("/analyze")
 def analyze(request: AnalysisRequest):
-    api_key = os.getenv("MODEL_API_KEY")
+    raw_api_key = os.getenv("MODEL_API_KEY", "")
+    api_key = raw_api_key.strip()
+
+    print("Meta API key configured:", bool(api_key))
+    print("Meta API key length:", len(api_key))
+    print(
+          "Meta API key has surrounding whitespace:",
+    raw_api_key != raw_api_key.strip()
+    )
 
     if not api_key:
         return {
