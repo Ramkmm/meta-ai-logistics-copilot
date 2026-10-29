@@ -26,6 +26,7 @@ import {
 } from "recharts";
 import "./App.css";
 import RiskInsights from "./RiskInsights";
+import ModelEvaluation from "./ModelEvaluation";
 
 const API = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
@@ -489,6 +490,7 @@ const health = (() => {
             </section>
 
             <RiskInsights shipments={dashboard.shipments} />
+            <ModelEvaluation />
 
             <section className="panel shipments-panel" id="shipments">
               <div className="panel-heading">
