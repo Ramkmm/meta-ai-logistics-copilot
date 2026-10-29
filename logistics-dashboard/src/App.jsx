@@ -25,6 +25,7 @@ import {
   YAxis,
 } from "recharts";
 import "./App.css";
+import RiskInsights from "./RiskInsights";
 
 const API = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
@@ -486,6 +487,8 @@ const health = (() => {
                 })}
               </div>
             </section>
+
+            <RiskInsights shipments={dashboard.shipments} />
 
             <section className="panel shipments-panel" id="shipments">
               <div className="panel-heading">
