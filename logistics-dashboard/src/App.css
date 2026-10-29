@@ -593,3 +593,30 @@ footer { text-align: center; padding: 12px; }
     padding-left: 40px;
   }
 }
+.finding-bullet {
+  display: inline-block;
+  color: #5267e8;
+  font-weight: 700;
+  margin-right: 8px;
+}
+
+.result-line {
+  overflow-wrap: anywhere;
+}
+
+/* Readable AI-generated bullet and numbered list lines */
+.ai-message-list-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin: 0 0 10px;
+}
+
+.ai-message-list-item .finding-bullet {
+  flex: 0 0 auto;
+  line-height: inherit;
+}
+
+.ai-message-list-item strong {
+  flex: 0 0 auto;
+}

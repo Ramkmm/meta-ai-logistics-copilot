@@ -250,7 +250,7 @@ const health = (() => {
         {error && <div className="error-banner">{error}</div>}
 
         {!metrics ? (
-          <div className="loading-panel">Loading logistics dataâ€¦</div>
+          <div className="loading-panel">Loading logistics data…</div>
         ) : (
           <>
             <section className="metrics-grid" id="overview">
@@ -470,7 +470,7 @@ const health = (() => {
                       <div className="item-info">
                         <strong>{item.item}</strong>
                         <span>
-                          Stock: {item.stock} Â· Reorder at {item.reorder_level}
+                          Stock: {item.stock} · Reorder at {item.reorder_level}
                         </span>
                       </div>
                       <div className="inventory-badges">
@@ -554,11 +554,11 @@ const health = (() => {
                   onChange={(event) => setQuestion(event.target.value)}
                   minLength={3}
                   maxLength={1000}
-                  placeholder="Ask about delayed deliveries or inventoryâ€¦"
+                  placeholder="Ask about delayed deliveries or inventory…"
                   required
                 />
                 <button type="submit" disabled={loading}>
-                  {loading ? "Analyzingâ€¦" : "Analyze"} <Send size={16} />
+                  {loading ? "Analyzing…" : "Analyze"} <Send size={16} />
                 </button>
               </form>
 
@@ -570,7 +570,7 @@ const health = (() => {
                     <span>{analysis.mode}</span>
                   </div>
                   {analysis.findings?.map((finding) => (
-                    <p className="result-line" key={finding}>â€¢ {finding}</p>
+                    <p className="result-line" key={finding}><span className="finding-bullet" aria-hidden="true">•</span>{finding}</p>
                   ))}
                   {analysis.recommendations && (
                     <>
@@ -583,14 +583,35 @@ const health = (() => {
                     </>
                   )}
                   {analysis.message && (
-                  <div className="ai-message">
-                  {analysis.message.split("\n").map((line, index) => {
-                  const cleaned = line.replace(/\*\*/g, "").replace(/^#{1,6}\s*/, "");
-                  return cleaned.trim() ? (
-                  <p key={index}>{cleaned}</p>
-                  ) : null;
-                  })}
-                  </div>
+                    <div className="ai-message">
+                      {analysis.message.split("\n").map((line, index) => {
+                        const cleaned = line
+                          .replace(/\*\*/g, "")
+                          .replace(/^#{1,6}\s*/, "")
+                          .trim();
+                        if (!cleaned) return null;
+
+                        const bulletMatch = cleaned.match(/^(?:[-*•])\s+(.+)$/);
+                        const numberedMatch = cleaned.match(/^\d+[.)]\s+(.+)$/);
+
+                        if (bulletMatch) {
+                          return (
+                            <p className="ai-message-list-item" key={index}>
+                              <span className="finding-bullet" aria-hidden="true">•</span>
+                              {bulletMatch[1]}
+                            </p>
+                          );
+                        }
+                        if (numberedMatch) {
+                          return (
+                            <p className="ai-message-list-item" key={index}>
+                              <strong>{cleaned.match(/^\d+/)[0]}.</strong> {numberedMatch[1]}
+                            </p>
+                          );
+                        }
+                        return <p key={index}>{cleaned}</p>;
+                      })}
+                    </div>
                   )}
                   {analysis.note && <p className="muted-note">{analysis.note}</p>}
                 </div>
@@ -598,7 +619,7 @@ const health = (() => {
             </section>
 
             <footer>
-              AI Logistics & Supply Chain Copilot Â· Prototype Â· Sample data only
+              AI Logistics & Supply Chain Copilot · Prototype · Sample data only
             </footer>
           </>
         )}
