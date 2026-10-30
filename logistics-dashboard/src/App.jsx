@@ -27,6 +27,7 @@ import {
 import "./App.css";
 import RiskInsights from "./RiskInsights";
 import ModelEvaluation from "./ModelEvaluation";
+import MLShipmentRisk from "./MLShipmentRisk";
 
 const API = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
@@ -489,6 +490,7 @@ const health = (() => {
               </div>
             </section>
 
+            <MLShipmentRisk />
             <RiskInsights shipments={dashboard.shipments} />
             <ModelEvaluation />
 

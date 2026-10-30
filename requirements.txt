@@ -2,3 +2,6 @@ fastapi
 uvicorn[standard]
 python-dotenv
 openai
+
+scikit-learn>=1.6,<2
+pandas

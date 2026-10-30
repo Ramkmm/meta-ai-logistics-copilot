@@ -5,6 +5,7 @@ from openai import OpenAI
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+from shipment_risk_ml import EVALUATION, predict_delay_risk
 
 
 load_dotenv()
@@ -96,7 +97,14 @@ def calculate_metrics():
             for item in INVENTORY
         ),
     }
-
+class ShipmentRiskRequest(BaseModel):
+    distance_km: float = Field(gt=0, le=20000)
+    planned_transit_hours: float = Field(gt=0, le=1000)
+    carrier_delay_rate: float = Field(ge=0, le=1)
+    weather_severity: int = Field(ge=0, le=5)
+    traffic_severity: int = Field(ge=0, le=5)
+    customs_risk: int = Field(ge=0, le=1)
+    hub_congestion: int = Field(ge=0, le=5)
 
 @app.get("/")
 def home():
@@ -115,7 +123,15 @@ def dashboard():
         "inventory": INVENTORY,
     }
 
+@app.get("/shipment-risk/evaluation")
+def shipment_risk_evaluation():
+    return EVALUATION
 
+
+@app.post("/shipment-risk/predict")
+def shipment_risk_predict(request: ShipmentRiskRequest):
+    features = request.model_dump()
+    return predict_delay_risk(features)
 
 @app.post("/analyze")
 def analyze(request: AnalysisRequest):
