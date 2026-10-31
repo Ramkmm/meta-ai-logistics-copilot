@@ -4,3 +4,17 @@ __pycache__/
 *.pyc
 node_modules/
 dist/
+
+# Delhivery ML datasets and generated artifacts
+delhivery_data.csv
+artifacts/*.joblib
+artifacts/*.csv
+!artifacts/delhivery_duration_model_compressed.joblib
+!artifacts/evaluation_report.json
+
+# Local backups and temporary files
+*.bak
+*.backup
+*.repair-backup
+*.before-text-fix
+*.pre-evaluation-backup

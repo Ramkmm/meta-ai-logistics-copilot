@@ -28,6 +28,8 @@ import "./App.css";
 import RiskInsights from "./RiskInsights";
 import ModelEvaluation from "./ModelEvaluation";
 import MLShipmentRisk from "./MLShipmentRisk";
+import DelhiveryDuration from "./DelhiveryDuration";
+import RouteEstimator from "./RouteEstimator";
 
 const API = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
@@ -65,6 +67,7 @@ function App() {
     "Which shipment should be prioritized and which items need restocking?"
   );
   const [analysis, setAnalysis] = useState(null);
+  const [routeContext, setRouteContext] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [reviewedActions, setReviewedActions] = useState(() => new Set());
@@ -86,27 +89,31 @@ function App() {
     loadDashboard();
   }, []);
 
-  async function askCopilot(event) {
-    event.preventDefault();
-    setLoading(true);
-    setAnalysis(null);
-    setError("");
 
-    try {
-      const response = await fetch(`${API}/analyze`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question }),
-      });
+async function askCopilot(event) {
+  event.preventDefault();
+  setLoading(true);
+  setAnalysis(null);
+  setError("");
 
-      if (!response.ok) throw new Error("Analysis request failed");
-      setAnalysis(await response.json());
-    } catch {
-      setError("Analysis failed. Check that the FastAPI backend is running.");
-    } finally {
-      setLoading(false);
-    }
+  try {
+    const response = await fetch(`${API}/analyze`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        question,
+        route_context: routeContext,
+      }),
+    });
+
+    if (!response.ok) throw new Error("Analysis request failed");
+    setAnalysis(await response.json());
+  } catch {
+    setError("Analysis failed. Check that the FastAPI backend is running.");
+  } finally {
+    setLoading(false);
   }
+}
 
   const metrics = dashboard?.metrics;
   const chartData = dashboard?.shipments?.map((shipment) => ({
@@ -491,6 +498,8 @@ const health = (() => {
             </section>
 
             <MLShipmentRisk />
+            <DelhiveryDuration />
+            <RouteEstimator onRouteEstimated={setRouteContext} />
             <RiskInsights shipments={dashboard.shipments} />
             <ModelEvaluation />
 

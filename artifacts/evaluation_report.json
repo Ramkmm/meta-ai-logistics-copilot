@@ -1,0 +1,45 @@
+{
+  "dataset": "delhivery_data.csv",
+  "raw_segment_rows": 144867,
+  "aggregated_trip_rows": 14817,
+  "training_trips": 10654,
+  "test_trips": 4163,
+  "target": "actual_trip_minutes",
+  "target_definition": "maximum actual_time across segment rows for each trip_uuid",
+  "features": [
+    "route_type",
+    "source_name",
+    "destination_name",
+    "creation_hour",
+    "creation_weekday",
+    "osrm_time_estimate",
+    "osrm_distance_estimate"
+  ],
+  "best_model_by_mae": "ExtraTrees",
+  "model_comparison": {
+    "RandomForest": {
+      "mae_minutes": 53.137,
+      "rmse_minutes": 127.01,
+      "r2": 0.9344,
+      "test_trips": 4163
+    },
+    "ExtraTrees": {
+      "mae_minutes": 50.844,
+      "rmse_minutes": 124.625,
+      "r2": 0.9369,
+      "test_trips": 4163
+    },
+    "HistGradientBoosting": {
+      "mae_minutes": 62.832,
+      "rmse_minutes": 137.165,
+      "r2": 0.9235,
+      "test_trips": 4163
+    }
+  },
+  "cautions": [
+    "Historical 2018 dataset; not a live shipment feed.",
+    "OSRM estimates are aggregated as maximum segment values; verify dispatch-time availability.",
+    "Do not use actual_time, actual_distance_to_destination, segment_actual_time, or start_scan_to_end_scan as prediction features.",
+    "Metrics are for the provided test split and may not represent current logistics performance."
+  ]
+}
