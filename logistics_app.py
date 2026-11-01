@@ -5,11 +5,9 @@ from openai import OpenAI
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-from shipment_risk_ml import EVALUATION, predict_delay_risk
-from pathlib import Path
+from shipment_risk_ml import get_evaluation, predict_delay_risk
 from functools import lru_cache
 
-import joblib
 import pandas as pd
 from fastapi import HTTPException
 
@@ -119,22 +117,6 @@ class ShipmentRiskRequest(BaseModel):
     customs_risk: int = Field(ge=0, le=1)
     hub_congestion: int = Field(ge=0, le=5)
 
-class DelhiveryDurationRequest(BaseModel):
-    route_type: str = Field(min_length=1, max_length=50)
-    source_name: str = Field(min_length=1, max_length=150)
-    destination_name: str = Field(min_length=1, max_length=150)
-
-    creation_hour: int = Field(ge=0, le=23)
-    creation_weekday: int = Field(ge=0, le=6)
-
-    osrm_time_estimate: float = Field(gt=0, le=100000)
-    osrm_distance_estimate: float = Field(gt=0, le=100000)
-DELHIVERY_MODEL_PATH = (
-    Path(__file__).resolve().parent
-    / "artifacts"
-    / "delhivery_duration_model_compressed.joblib"
-)
-
 class RouteEstimateRequest(BaseModel):
     origin: str = Field(min_length=2, max_length=150)
     destination: str = Field(min_length=2, max_length=150)
@@ -149,13 +131,6 @@ class RouteEstimateRequest(BaseModel):
 
     shipment_value_inr: float = Field(default=0, ge=0)
     insurance_percent: float = Field(default=0, ge=0, le=100)
-@lru_cache(maxsize=1)
-def load_delhivery_model():
-    if not DELHIVERY_MODEL_PATH.exists():
-        raise FileNotFoundError("Delhivery model artifact not found.")
-
-    return joblib.load(DELHIVERY_MODEL_PATH)
-
 @lru_cache(maxsize=200)
 def geocode_location(place: str):
     """Convert a place name into latitude and longitude."""
@@ -361,75 +336,13 @@ def dashboard():
 
 @app.get("/shipment-risk/evaluation")
 def shipment_risk_evaluation():
-    return EVALUATION
+    return get_evaluation()
 
 
 @app.post("/shipment-risk/predict")
 def shipment_risk_predict(request: ShipmentRiskRequest):
     features = request.model_dump()
     return predict_delay_risk(features)
-
-@app.get("/real-data/evaluation")
-def delhivery_model_evaluation():
-    report_path = (
-        Path(__file__).resolve().parent
-        / "artifacts"
-        / "evaluation_report.json"
-    )
-
-    if not report_path.exists():
-        raise HTTPException(
-            status_code=404,
-            detail="Model evaluation report not found."
-        )
-
-    import json
-
-    with open(report_path, "r", encoding="utf-8") as file:
-        return json.load(file)
-
-
-@app.post("/real-data/predict-duration")
-def predict_delhivery_duration(request: DelhiveryDurationRequest):
-    try:
-        model = load_delhivery_model()
-
-        features = pd.DataFrame([request.model_dump()])
-
-        predicted_minutes = float(model.predict(features)[0])
-        predicted_minutes = max(0.0, predicted_minutes)
-
-        return {
-            "status": "success",
-            "model": "ExtraTrees",
-            "model_version": "delhivery-historical-2018-v1",
-            "predicted_duration_minutes": round(predicted_minutes, 2),
-            "predicted_duration_hours": round(
-                predicted_minutes / 60, 2
-            ),
-            "note": (
-                "Experimental prediction based on historical "
-                "Delhivery trip data from 2018. Not a verified "
-                "live shipment ETA."
-            ),
-        }
-
-    except FileNotFoundError:
-        raise HTTPException(
-            status_code=503,
-            detail="Delhivery prediction model is not available."
-        )
-
-    except Exception as exc:
-        print(
-            "Delhivery prediction error:",
-            type(exc).__name__,
-            str(exc)
-        )
-        raise HTTPException(
-            status_code=500,
-            detail="Unable to generate trip-duration prediction."
-        )
 
 @app.post("/analyze")
 def analyze(request: AnalysisRequest):

@@ -1,14 +1,17 @@
 
 """Synthetic shipment delay-risk model for the LogiCopilot hackathon.
 
-This is a prototype trained and evaluated on synthetic data only.
-It must not be presented as validated real-world shipment performance.
+This prototype uses synthetic data only. Its metrics are not
+evidence of real-world shipment prediction performance.
 """
 
 from datetime import datetime, timedelta, timezone
+from functools import lru_cache
+import gc
 
 import numpy as np
 import pandas as pd
+
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
@@ -22,6 +25,7 @@ from sklearn.metrics import (
 )
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
+
 
 FEATURES = [
     "distance_km",
@@ -37,16 +41,15 @@ MODEL_VERSION = "synthetic-logistic-regression-v1"
 
 
 def generate_synthetic_shipments(n=5000, seed=42):
-    """Generate reproducible historical-style shipment records."""
+    """Generate reproducible synthetic shipment records."""
     rng = np.random.default_rng(seed)
 
-    dates = [
-        datetime(2025, 1, 1, tzinfo=timezone.utc) + timedelta(hours=6 * i)
-        for i in range(n)
-    ]
-
     data = {
-        "shipment_date": dates,
+        "shipment_date": [
+            datetime(2025, 1, 1, tzinfo=timezone.utc)
+            + timedelta(hours=6 * i)
+            for i in range(n)
+        ],
         "distance_km": rng.integers(30, 2501, n).astype(float),
         "planned_transit_hours": rng.uniform(4, 120, n),
         "carrier_delay_rate": rng.uniform(0.02, 0.55, n),
@@ -56,8 +59,6 @@ def generate_synthetic_shipments(n=5000, seed=42):
         "hub_congestion": rng.integers(0, 5, n).astype(float),
     }
 
-    # A synthetic label-generating process. These coefficients are illustrative,
-    # not learned facts about real shipping operations.
     log_odds = (
         -2.8
         + 0.85 * data["carrier_delay_rate"]
@@ -74,21 +75,23 @@ def generate_synthetic_shipments(n=5000, seed=42):
     probability = 1 / (1 + np.exp(-log_odds))
     data["delayed"] = rng.binomial(1, probability, n)
 
-    # Keep the records in chronological order for the holdout split.
     return data
 
 
-
 def train_and_evaluate():
-    data = generate_synthetic_shipments()
-    split_at = int(len(data["delayed"]) * 0.8)
+    """Train once and return the model with evaluation metrics."""
 
-    # scikit-learn expects a 2D table, not a dictionary of arrays.
+    data = generate_synthetic_shipments()
+
     x = pd.DataFrame({name: data[name] for name in FEATURES})
     y = np.asarray(data["delayed"])
 
-    x_train, x_test = x.iloc[:split_at], x.iloc[split_at:]
-    y_train, y_test = y[:split_at], y[split_at:]
+    split_at = int(len(y) * 0.8)
+
+    x_train = x.iloc[:split_at]
+    x_test = x.iloc[split_at:]
+    y_train = y[:split_at]
+    y_test = y[split_at:]
 
     preprocessor = ColumnTransformer(
         transformers=[
@@ -159,27 +162,35 @@ def train_and_evaluate():
         ),
     }
 
+    # Release temporary training and evaluation data.
+    del data, x, y
+    del x_train, x_test, y_train, y_test
+    del predictions, matrix
+    gc.collect()
+
     return model, metrics
 
 
+@lru_cache(maxsize=1)
+def get_trained_model():
+    """Train and cache the model on its first use."""
+    return train_and_evaluate()
+
+
+def get_evaluation():
+    """Return cached model evaluation metrics."""
+    _, evaluation = get_trained_model()
+    return evaluation
+
 
 def predict_delay_risk(features):
-    """Predict delay probability from validated numeric feature values."""
+    """Predict delay probability after validating all input features."""
+
     missing = [name for name in FEATURES if name not in features]
     if missing:
-        raise ValueError("Missing required features: " + ", ".join(missing))
-
-    row = {}
-    for name in FEATURES:
-        try:
-            value = float(features[name])
-        except (TypeError, ValueError):
-            raise ValueError(f"{name} must be numeric") from None
-
-        if not np.isfinite(value):
-            raise ValueError(f"{name} must be a finite number")
-
-        row[name] = value
+        raise ValueError(
+            "Missing required features: " + ", ".join(missing)
+        )
 
     bounds = {
         "distance_km": (0, 20000),
@@ -191,15 +202,34 @@ def predict_delay_risk(features):
         "hub_congestion": (0, 4),
     }
 
-    for name, (minimum, maximum) in bounds.items():
-        if not minimum <= row[name] <= maximum:
+    row = {}
+
+    for name in FEATURES:
+        try:
+            value = float(features[name])
+        except (TypeError, ValueError):
+            raise ValueError(f"{name} must be numeric") from None
+
+        if not np.isfinite(value):
+            raise ValueError(f"{name} must be a finite number")
+
+        minimum, maximum = bounds[name]
+
+        if not minimum <= value <= maximum:
             raise ValueError(
                 f"{name} must be between {minimum} and {maximum}"
             )
 
+        row[name] = value
+
+    # Train/load only once, after all validations are complete.
+    model, _ = get_trained_model()
+
     probability = float(
-    MODEL.predict_proba(pd.DataFrame([row], columns=FEATURES))[0, 1]
-)
+        model.predict_proba(
+            pd.DataFrame([row], columns=FEATURES)
+        )[0, 1]
+    )
 
     if probability >= 0.70:
         risk_level = "high"
@@ -221,4 +251,3 @@ def predict_delay_risk(features):
             "Not validated for real-world operational decisions."
         ),
     }
-MODEL, EVALUATION = train_and_evaluate()
