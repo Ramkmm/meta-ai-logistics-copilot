@@ -18,10 +18,10 @@ const fields = [
   { name: "distance_km", label: "Distance (km)", min: 1, max: 20000, step: 1 },
   { name: "planned_transit_hours", label: "Planned transit (hours)", min: 0.1, max: 1000, step: 0.1 },
   { name: "carrier_delay_rate", label: "Carrier delay rate (0–1)", min: 0, max: 1, step: 0.01 },
-  { name: "weather_severity", label: "Weather severity (0–5)", min: 0, max: 5, step: 1 },
-  { name: "traffic_severity", label: "Traffic severity (0–5)", min: 0, max: 5, step: 1 },
+  { name: "weather_severity", label: "Weather severity (0–4)", min: 0, max: 4, step: 1 },
+  { name: "traffic_severity", label: "Traffic severity (0–4)", min: 0, max: 4, step: 1 },
   { name: "customs_risk", label: "Customs risk (0 or 1)", min: 0, max: 1, step: 1 },
-  { name: "hub_congestion", label: "Hub congestion (0–5)", min: 0, max: 5, step: 1 },
+  { name: "hub_congestion", label: "Hub congestion (0–4)", min: 0, max: 4, step: 1 },
 ];
 
 function Metric({ label, value }) {

@@ -112,10 +112,10 @@ class ShipmentRiskRequest(BaseModel):
     distance_km: float = Field(gt=0, le=20000)
     planned_transit_hours: float = Field(gt=0, le=1000)
     carrier_delay_rate: float = Field(ge=0, le=1)
-    weather_severity: int = Field(ge=0, le=5)
-    traffic_severity: int = Field(ge=0, le=5)
+    weather_severity: int = Field(ge=0, le=4)
+    traffic_severity: int = Field(ge=0, le=4)
     customs_risk: int = Field(ge=0, le=1)
-    hub_congestion: int = Field(ge=0, le=5)
+    hub_congestion: int = Field(ge=0, le=4)
 
 class RouteEstimateRequest(BaseModel):
     origin: str = Field(min_length=2, max_length=150)
